@@ -30,13 +30,13 @@ PigpiodOutputEditor::PigpiodOutputEditor (GenericProcessor* parentNode)
     desiredWidth = 250;
 
     // Hostname/IP input (text)
-    addTextBoxParameterEditor ("hostname", 10, 29);
+    addTextBoxParameterEditor (Parameter::PROCESSOR_SCOPE, "hostname", 10, 29);
 
     // Port number
-    addTextBoxParameterEditor ("port", 10, 54);
+    addTextBoxParameterEditor (Parameter::PROCESSOR_SCOPE, "port", 10, 54);
 
     // Connect button
-    connectButton = std::make_unique<UtilityButton> ("CONNECT", Font ("Small Text", 13, Font::plain));
+    connectButton = std::make_unique<UtilityButton> ("CONNECT");
     connectButton->setBounds (10, 79, 80, 20);
     connectButton->addListener (this);
     addAndMakeVisible (connectButton.get());
@@ -44,7 +44,6 @@ PigpiodOutputEditor::PigpiodOutputEditor (GenericProcessor* parentNode)
     // Connection status label
     statusLabel = std::make_unique<Label> ("Status", "Disconnected");
     statusLabel->setBounds (95, 79, 145, 20);
-    statusLabel->setFont (Font ("Small Text", 12, Font::plain));
     statusLabel->setColour (Label::textColourId, Colours::white);
     addAndMakeVisible (statusLabel.get());
 
@@ -52,7 +51,7 @@ PigpiodOutputEditor::PigpiodOutputEditor (GenericProcessor* parentNode)
     addComboBoxParameterEditor (Parameter::PROCESSOR_SCOPE, "gpio_pin", 10, 109);
 
     // Pulse duration
-    addTextBoxParameterEditor ("pulse_duration", 10, 134);
+    addTextBoxParameterEditor (Parameter::PROCESSOR_SCOPE, "pulse_duration", 10, 134);
 
     // Input line
     addComboBoxParameterEditor (Parameter::STREAM_SCOPE, "input_line", 10, 159);
