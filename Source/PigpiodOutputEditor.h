@@ -35,7 +35,7 @@
 
 */
 
-class PigpiodOutputEditor : public GenericEditor, public Timer
+class PigpiodOutputEditor : public GenericEditor, public Timer, public Button::Listener
 {
 public:
     /** Constructor*/
@@ -44,9 +44,10 @@ public:
     /** Destructor*/
     ~PigpiodOutputEditor() {}
 
-private:
     /** Called when the connect button is clicked */
     void buttonClicked (Button* button) override;
+
+private:
 
     /** Timer callback to update connection status */
     void timerCallback() override;

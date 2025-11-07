@@ -86,8 +86,6 @@ void PigpiodOutputEditor::buttonClicked (Button* button)
 
         updateConnectionStatus();
     }
-
-    GenericEditor::buttonClicked (button);
 }
 
 void PigpiodOutputEditor::timerCallback()
