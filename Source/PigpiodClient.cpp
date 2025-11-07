@@ -93,6 +93,23 @@ int PigpiodClient::write (int gpio, int level)
     return sendCommand (PI_CMD_WRITE, gpio, level);
 }
 
+int PigpiodClient::trig (int gpio, int pulseLength)
+{
+    if (gpio < 0 || gpio > 53)
+    {
+        lastError = "Invalid GPIO number: " + String (gpio);
+        return PI_BAD_GPIO;
+    }
+
+    if (pulseLength < 1 || pulseLength > 100)
+    {
+        lastError = "Invalid pulse length: " + String (pulseLength) + " (must be 1-100 microseconds)";
+        return PI_BAD_GPIO;
+    }
+
+    return sendCommand (PI_CMD_TRIG, gpio, pulseLength);
+}
+
 int PigpiodClient::sendCommand (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t p3)
 {
     if (!isConnected())

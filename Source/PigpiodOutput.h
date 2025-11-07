@@ -35,7 +35,7 @@
 
     @see GenericProcessor
  */
-class PigpiodOutput : public GenericProcessor, private Timer
+class PigpiodOutput : public GenericProcessor
 {
 public:
     /** Constructor */
@@ -78,9 +78,6 @@ public:
     String getConnectionStatus() const;
 
 private:
-    /** Timer callback for ending pulse */
-    void timerCallback() override;
-
     /** pigpiod client */
     PigpiodClient pigpiod;
 

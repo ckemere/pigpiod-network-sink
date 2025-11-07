@@ -28,6 +28,7 @@
 // pigpiod socket interface command codes
 #define PI_CMD_PIGPV 26  // Get pigpio version
 #define PI_CMD_WRITE 4   // Write GPIO level
+#define PI_CMD_TRIG 37   // Trigger pulse
 
 // GPIO levels
 #define PI_LOW 0
@@ -76,6 +77,14 @@ public:
      * @return 0 on success, negative error code on failure
      */
     int write (int gpio, int level);
+
+    /** Trigger pulse on GPIO pin
+     *
+     * @param gpio GPIO number (BCM numbering)
+     * @param pulseLength Pulse length in microseconds (1-100)
+     * @return 0 on success, negative error code on failure
+     */
+    int trig (int gpio, int pulseLength);
 
     /** Get last error message */
     String getLastError() const { return lastError; }

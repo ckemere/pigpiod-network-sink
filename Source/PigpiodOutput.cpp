@@ -53,8 +53,8 @@ void PigpiodOutput::registerParameters()
     addIntParameter (Parameter::PROCESSOR_SCOPE, "gpio_pin", "GPIO Pin",
                     "The Raspberry Pi GPIO pin to use (BCM numbering)", 17, 2, 27);
 
-    addFloatParameter (Parameter::PROCESSOR_SCOPE, "pulse_duration", "Pulse duration (ms)",
-                      "Duration of the output pulse in milliseconds", 1.0f, 0.01f, 1000.0f);
+    addIntParameter (Parameter::PROCESSOR_SCOPE, "pulse_duration", "Pulse duration (us)",
+                    "Duration of the output pulse in microseconds", 50, 10, 100);
 
     addIntParameter (Parameter::STREAM_SCOPE, "input_line", "Input line",
                     "The TTL line for triggering output", 1, 1, 16);
@@ -128,9 +128,6 @@ void PigpiodOutput::updateSettings()
 
 bool PigpiodOutput::stopAcquisition()
 {
-    // Stop timer if running
-    stopTimer();
-
     // Set GPIO low
     if (connected)
     {
@@ -182,31 +179,16 @@ void PigpiodOutput::handleTTLEvent (TTLEventPtr event)
             if (event->getState()) // Rising edge
             {
                 int gpio = (int) getParameter ("gpio_pin")->getValue();
-                float pulseDurationMs = getParameter ("pulse_duration")->getValue();
+                int pulseDurationUs = (int) getParameter ("pulse_duration")->getValue();
 
-                // Set GPIO high
-                int result = pigpiod.write (gpio, PI_HIGH);
+                // Trigger pulse using pigpiod TRIG command
+                int result = pigpiod.trig (gpio, pulseDurationUs);
 
                 if (result < 0)
                 {
-                    LOGC ("Failed to write GPIO: ", result);
-                }
-                else
-                {
-                    // Start timer to set GPIO low after pulse duration
-                    startTimer ((int) pulseDurationMs);
+                    LOGC ("Failed to trigger GPIO pulse: ", result);
                 }
             }
         }
     }
-}
-
-void PigpiodOutput::timerCallback()
-{
-    // Stop the timer
-    stopTimer();
-
-    // Set GPIO low to end the pulse
-    int gpio = (int) getParameter ("gpio_pin")->getValue();
-    pigpiod.write (gpio, PI_LOW);
 }

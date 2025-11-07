@@ -35,7 +35,7 @@ This plugin can be added via the Open Ephys GUI Plugin Installer. To access the 
 3. Set the port (default: 8888)
 4. Click "CONNECT" to establish connection with pigpiod
 5. Configure the GPIO pin (BCM numbering, pins 2-27 available)
-6. Set the pulse duration in milliseconds (0.01 - 1000 ms, default: 1 ms)
+6. Set the pulse duration in microseconds (10 - 100 µs, default: 50 µs)
 7. Select the TTL input line that will trigger the GPIO pulse
 8. Optionally select a gate line to enable/disable triggering
 
