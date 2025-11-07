@@ -27,8 +27,9 @@
 PigpiodOutputEditor::PigpiodOutputEditor (GenericProcessor* parentNode)
     : GenericEditor (parentNode)
 {
-    desiredWidth = 250;
+    desiredWidth = 340;
 
+    // Column 1: Connection settings
     // Hostname/IP input (text)
     addTextBoxParameterEditor (Parameter::PROCESSOR_SCOPE, "hostname", 10, 29);
 
@@ -43,21 +44,22 @@ PigpiodOutputEditor::PigpiodOutputEditor (GenericProcessor* parentNode)
 
     // Connection status label
     statusLabel = std::make_unique<Label> ("Status", "Disconnected");
-    statusLabel->setBounds (95, 79, 145, 20);
+    statusLabel->setBounds (95, 79, 70, 20);
     statusLabel->setColour (Label::textColourId, Colours::white);
     addAndMakeVisible (statusLabel.get());
 
+    // Column 2: Pin configuration
     // GPIO pin
-    addComboBoxParameterEditor (Parameter::PROCESSOR_SCOPE, "gpio_pin", 10, 109);
+    addComboBoxParameterEditor (Parameter::PROCESSOR_SCOPE, "gpio_pin", 175, 29);
 
     // Pulse duration
-    addTextBoxParameterEditor (Parameter::PROCESSOR_SCOPE, "pulse_duration", 10, 134);
+    addTextBoxParameterEditor (Parameter::PROCESSOR_SCOPE, "pulse_duration", 175, 54);
 
     // Input line
-    addComboBoxParameterEditor (Parameter::STREAM_SCOPE, "input_line", 10, 159);
+    addComboBoxParameterEditor (Parameter::STREAM_SCOPE, "input_line", 175, 79);
 
     // Gate line
-    addComboBoxParameterEditor (Parameter::STREAM_SCOPE, "gate_line", 10, 184);
+    addComboBoxParameterEditor (Parameter::STREAM_SCOPE, "gate_line", 175, 104);
 
     // Start timer to update connection status
     startTimer (500); // Update every 500ms
