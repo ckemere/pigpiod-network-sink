@@ -10,7 +10,36 @@ This plugin can be added via the Open Ephys GUI Plugin Installer. To access the 
 
 ## Usage
 
-Instructions for using the plugin
+### Raspberry Pi Setup
+
+1. Install pigpiod on your Raspberry Pi:
+   ```bash
+   sudo apt-get install pigpio
+   ```
+
+2. Start the pigpiod daemon (allow remote connections):
+   ```bash
+   sudo pigpiod
+   ```
+
+3. To enable pigpiod on boot:
+   ```bash
+   sudo systemctl enable pigpiod
+   sudo systemctl start pigpiod
+   ```
+
+### Plugin Configuration
+
+1. Add the "Pigpiod Sink" plugin to your signal chain
+2. Enter the Raspberry Pi's IP address (or "localhost" if running locally)
+3. Set the port (default: 8888)
+4. Click "CONNECT" to establish connection with pigpiod
+5. Configure the GPIO pin (BCM numbering, pins 2-27 available)
+6. Set the pulse duration in milliseconds (0.01 - 1000 ms, default: 1 ms)
+7. Select the TTL input line that will trigger the GPIO pulse
+8. Optionally select a gate line to enable/disable triggering
+
+When a rising edge is detected on the input line (and the gate is open), the plugin will send a pulse to the configured GPIO pin on the Raspberry Pi.
 
 ## Building from source
 

@@ -21,7 +21,7 @@
 
 */
 
-#include "ArduinoOutput.h"
+#include "PigpiodOutput.h"
 #include <PluginInfo.h>
 #include <string>
 #ifdef _WIN32
@@ -50,7 +50,7 @@ extern "C" EXPORT int getPluginInfo (int index, Plugin::PluginInfo* info)
             info->type = Plugin::PROCESSOR;
             info->processor.name = "Pigpiod Sink";
             info->processor.type = Plugin::Processor::SINK;
-            info->processor.creator = &(Plugin::createProcessor<ArduinoOutput>);
+            info->processor.creator = &(Plugin::createProcessor<PigpiodOutput>);
             break;
         default:
             return -1;

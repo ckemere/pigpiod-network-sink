@@ -21,33 +21,43 @@
 
 */
 
-#ifndef __ARDUINOOUTPUTEDITOR_H_28EB4CC9__
-#define __ARDUINOOUTPUTEDITOR_H_28EB4CC9__
+#ifndef __PIGPIODOUTPUTEDITOR_H_28EB4CC9__
+#define __PIGPIODOUTPUTEDITOR_H_28EB4CC9__
 
-#include "ArduinoOutput.h"
+#include "PigpiodOutput.h"
 #include <EditorHeaders.h>
-#include <SerialLib.h>
 
 /**
 
-  User interface for the ArduinoOutput processor.
+  User interface for the PigpiodOutput processor.
 
-  @see ArduinoOutput
+  @see PigpiodOutput
 
 */
 
-class ArduinoOutputEditor : public GenericEditor
-
+class PigpiodOutputEditor : public GenericEditor, public Timer
 {
 public:
     /** Constructor*/
-    ArduinoOutputEditor (GenericProcessor* parentNode);
+    PigpiodOutputEditor (GenericProcessor* parentNode);
 
     /** Destructor*/
-    ~ArduinoOutputEditor() {}
+    ~PigpiodOutputEditor() {}
 
 private:
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ArduinoOutputEditor);
+    /** Called when the connect button is clicked */
+    void buttonClicked (Button* button) override;
+
+    /** Timer callback to update connection status */
+    void timerCallback() override;
+
+    /** Update the connection status label */
+    void updateConnectionStatus();
+
+    std::unique_ptr<UtilityButton> connectButton;
+    std::unique_ptr<Label> statusLabel;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PigpiodOutputEditor);
 };
 
-#endif // __ARDUINOOUTPUTEDITOR_H_28EB4CC9__
+#endif // __PIGPIODOUTPUTEDITOR_H_28EB4CC9__
