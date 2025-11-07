@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include <juce_core/juce_core.h>
+#include <CommonLibHeader.h>
 
 // pigpiod socket interface command codes
 #define PI_CMD_PIGPV 26  // Get pigpio version
@@ -56,13 +56,13 @@ public:
      * @param port Port number (default 8888)
      * @return true if connection successful
      */
-    bool connect (const String& hostname, int port = 8888);
+    bool connect (const juce::String& hostname, int port = 8888);
 
     /** Disconnect from pigpiod daemon */
     void disconnect();
 
     /** Check if connected to pigpiod */
-    bool isConnected() const { return socket != nullptr && socket->isConnected(); }
+    bool isConnected() const;
 
     /** Get pigpiod version
      *
@@ -87,7 +87,7 @@ public:
     int trig (int gpio, int pulseLength);
 
     /** Get last error message */
-    String getLastError() const { return lastError; }
+    juce::String getLastError() const { return lastError; }
 
 private:
     /** Send command to pigpiod and receive response
@@ -100,9 +100,9 @@ private:
      */
     int sendCommand (uint32_t cmd, uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0);
 
-    std::unique_ptr<StreamingSocket> socket;
-    String lastError;
-    String hostname;
+    std::unique_ptr<juce::StreamingSocket> socket;
+    juce::String lastError;
+    juce::String hostname;
     int port;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PigpiodClient);

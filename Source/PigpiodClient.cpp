@@ -33,14 +33,19 @@ PigpiodClient::~PigpiodClient()
     disconnect();
 }
 
-bool PigpiodClient::connect (const String& hostname, int port)
+bool PigpiodClient::isConnected() const
+{
+    return socket != nullptr && socket->isConnected();
+}
+
+bool PigpiodClient::connect (const juce::String& hostname, int port)
 {
     disconnect(); // Close any existing connection
 
     this->hostname = hostname;
     this->port = port;
 
-    socket = std::make_unique<StreamingSocket>();
+    socket = std::make_unique<juce::StreamingSocket>();
 
     if (socket->connect (hostname, port, 3000)) // 3 second timeout
     {
@@ -61,7 +66,7 @@ bool PigpiodClient::connect (const String& hostname, int port)
     }
     else
     {
-        lastError = "Failed to connect to " + hostname + ":" + String (port);
+        lastError = "Failed to connect to " + hostname + ":" + juce::String (port);
         socket = nullptr;
         return false;
     }
@@ -86,7 +91,7 @@ int PigpiodClient::write (int gpio, int level)
 {
     if (gpio < 0 || gpio > 53)
     {
-        lastError = "Invalid GPIO number: " + String (gpio);
+        lastError = "Invalid GPIO number: " + juce::String (gpio);
         return PI_BAD_GPIO;
     }
 
@@ -97,13 +102,13 @@ int PigpiodClient::trig (int gpio, int pulseLength)
 {
     if (gpio < 0 || gpio > 53)
     {
-        lastError = "Invalid GPIO number: " + String (gpio);
+        lastError = "Invalid GPIO number: " + juce::String (gpio);
         return PI_BAD_GPIO;
     }
 
     if (pulseLength < 1 || pulseLength > 100)
     {
-        lastError = "Invalid pulse length: " + String (pulseLength) + " (must be 1-100 microseconds)";
+        lastError = "Invalid pulse length: " + juce::String (pulseLength) + " (must be 1-100 microseconds)";
         return PI_BAD_GPIO;
     }
 
