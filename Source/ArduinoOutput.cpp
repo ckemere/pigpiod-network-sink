@@ -27,7 +27,7 @@
 #include <stdio.h>
 
 ArduinoOutput::ArduinoOutput()
-    : GenericProcessor ("Arduino Output Kemerelab"), gateIsOpen (true), deviceSelected (false)
+    : GenericProcessor ("Pigpiod Sink"), gateIsOpen (true), deviceSelected (false)
 {
     devices = getDevices();   
 }

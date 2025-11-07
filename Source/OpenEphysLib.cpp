@@ -37,7 +37,7 @@ using namespace Plugin;
 extern "C" EXPORT void getLibInfo (Plugin::LibraryInfo* info)
 {
     info->apiVersion = PLUGIN_API_VER;
-    info->name = "Arduino Output Kemerelab";
+    info->name = "Pigpiod Sink";
     info->libVersion = ProjectInfo::versionString;
     info->numPlugins = NUM_PLUGINS;
 }
@@ -48,7 +48,7 @@ extern "C" EXPORT int getPluginInfo (int index, Plugin::PluginInfo* info)
     {
         case 0:
             info->type = Plugin::PROCESSOR;
-            info->processor.name = "Arduino Output Kemerelab";
+            info->processor.name = "Pigpiod Sink";
             info->processor.type = Plugin::Processor::SINK;
             info->processor.creator = &(Plugin::createProcessor<ArduinoOutput>);
             break;
