@@ -99,16 +99,28 @@ void PigpiodOutputEditor::buttonClicked (Button* button)
         int gpio = (int) processor->getParameter ("gpio_pin")->getValue();
         int pulseDurationUs = (int) processor->getParameter ("pulse_duration")->getValue();
 
+        LOGC ("Test button clicked: GPIO=", gpio, " duration=", pulseDurationUs, "us");
+
         PigpiodClient& pigpiod = processor->getPigpiodClient();
+
+        if (!pigpiod.isConnected())
+        {
+            CoreServices::sendStatusMessage ("Test pulse failed: Not connected to pigpiod");
+            LOGC ("Test pulse failed: Not connected");
+            return;
+        }
+
         int result = pigpiod.trig (gpio, pulseDurationUs);
+
+        LOGC ("Test pulse result: ", result);
 
         if (result < 0)
         {
-            CoreServices::sendStatusMessage ("Test pulse failed: " + pigpiod.getLastError());
+            CoreServices::sendStatusMessage ("Test pulse failed (code " + String(result) + "): " + pigpiod.getLastError());
         }
         else
         {
-            CoreServices::sendStatusMessage ("Test pulse sent on GPIO " + String(gpio));
+            CoreServices::sendStatusMessage ("Test pulse sent on GPIO " + String(gpio) + " (" + String(pulseDurationUs) + "us)");
         }
     }
 }

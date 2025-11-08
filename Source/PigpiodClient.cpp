@@ -112,7 +112,11 @@ int PigpiodClient::trig (int gpio, int pulseLength)
         return PI_BAD_GPIO;
     }
 
-    return sendCommand (PI_CMD_TRIG, gpio, pulseLength);
+    DBG ("PigpiodClient::trig - Sending TRIG command: gpio=" + juce::String(gpio) + " pulseLength=" + juce::String(pulseLength) + "us");
+    int result = sendCommand (PI_CMD_TRIG, gpio, pulseLength);
+    DBG ("PigpiodClient::trig - Result: " + juce::String(result));
+
+    return result;
 }
 
 int PigpiodClient::sendCommand (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t p3)
