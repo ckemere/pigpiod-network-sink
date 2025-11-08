@@ -42,10 +42,16 @@ PigpiodOutputEditor::PigpiodOutputEditor (GenericProcessor* parentNode)
     connectButton->addListener (this);
     addAndMakeVisible (connectButton.get());
 
+    // Test button (hidden until connected)
+    testButton = std::make_unique<UtilityButton> ("TEST");
+    testButton->setBounds (10, 104, 80, 20);
+    testButton->addListener (this);
+    addChildComponent (testButton.get()); // addChildComponent keeps it hidden initially
+
     // Connection status label
-    statusLabel = std::make_unique<Label> ("Status", "Disconnected");
+    statusLabel = std::make_unique<Label> ("Status", "");
     statusLabel->setBounds (95, 79, 70, 20);
-    statusLabel->setColour (Label::textColourId, Colours::white);
+    statusLabel->setColour (Label::textColourId, Colours::grey);
     addAndMakeVisible (statusLabel.get());
 
     // Column 2: Pin configuration
@@ -70,10 +76,10 @@ PigpiodOutputEditor::PigpiodOutputEditor (GenericProcessor* parentNode)
 
 void PigpiodOutputEditor::buttonClicked (Button* button)
 {
+    PigpiodOutput* processor = (PigpiodOutput*) getProcessor();
+
     if (button == connectButton.get())
     {
-        PigpiodOutput* processor = (PigpiodOutput*) getProcessor();
-
         if (processor->isConnectedToPigpiod())
         {
             // Disconnect
@@ -86,6 +92,24 @@ void PigpiodOutputEditor::buttonClicked (Button* button)
         }
 
         updateConnectionStatus();
+    }
+    else if (button == testButton.get())
+    {
+        // Trigger a test pulse
+        int gpio = (int) processor->getParameter ("gpio_pin")->getValue();
+        int pulseDurationUs = (int) processor->getParameter ("pulse_duration")->getValue();
+
+        PigpiodClient& pigpiod = processor->getPigpiodClient();
+        int result = pigpiod.trig (gpio, pulseDurationUs);
+
+        if (result < 0)
+        {
+            CoreServices::sendStatusMessage ("Test pulse failed: " + pigpiod.getLastError());
+        }
+        else
+        {
+            CoreServices::sendStatusMessage ("Test pulse sent on GPIO " + String(gpio));
+        }
     }
 }
 
@@ -100,14 +124,21 @@ void PigpiodOutputEditor::updateConnectionStatus()
 
     if (processor->isConnectedToPigpiod())
     {
-        connectButton->setLabel ("DISCONNECT");
-        statusLabel->setText (processor->getConnectionStatus(), dontSendNotification);
-        statusLabel->setColour (Label::textColourId, Colours::lightgreen);
+        connectButton->setLabel ("CONNECTED");
+        testButton->setVisible (true);
+        statusLabel->setText ("", dontSendNotification);
+
+        // Set border color to green
+        setBackgroundColor (Colours::green);
     }
     else
     {
         connectButton->setLabel ("CONNECT");
+        testButton->setVisible (false);
         statusLabel->setText (processor->getConnectionStatus(), dontSendNotification);
         statusLabel->setColour (Label::textColourId, Colours::grey);
+
+        // Reset border color
+        setBackgroundColor (Colours::darkgrey);
     }
 }

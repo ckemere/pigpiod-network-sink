@@ -77,6 +77,9 @@ public:
     /** Get connection status message */
     String getConnectionStatus() const;
 
+    /** Get reference to pigpiod client (for test button) */
+    PigpiodClient& getPigpiodClient() { return pigpiod; }
+
 private:
     /** pigpiod client */
     PigpiodClient pigpiod;

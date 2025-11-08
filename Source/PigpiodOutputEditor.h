@@ -56,6 +56,7 @@ private:
     void updateConnectionStatus();
 
     std::unique_ptr<UtilityButton> connectButton;
+    std::unique_ptr<UtilityButton> testButton;
     std::unique_ptr<Label> statusLabel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PigpiodOutputEditor);
