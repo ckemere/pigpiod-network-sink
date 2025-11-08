@@ -127,9 +127,6 @@ void PigpiodOutputEditor::updateConnectionStatus()
         connectButton->setLabel ("CONNECTED");
         testButton->setVisible (true);
         statusLabel->setText ("", dontSendNotification);
-
-        // Set border color to green
-        setBackgroundColor (Colours::green);
     }
     else
     {
@@ -137,8 +134,5 @@ void PigpiodOutputEditor::updateConnectionStatus()
         testButton->setVisible (false);
         statusLabel->setText (processor->getConnectionStatus(), dontSendNotification);
         statusLabel->setColour (Label::textColourId, Colours::grey);
-
-        // Reset border color
-        setBackgroundColor (Colours::darkgrey);
     }
 }

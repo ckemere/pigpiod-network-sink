@@ -83,6 +83,7 @@ bool PigpiodOutput::connectToPigpiod()
         connectionStatus = "Connected (version " + String (version) + ")";
         LOGC ("Connected to pigpiod version ", version);
         CoreServices::sendStatusMessage ("Connected to pigpiod at " + hostname + ":" + String (pigpiodPort));
+        CoreServices::updateSignalChain (this);
         return true;
     }
     else
@@ -91,6 +92,7 @@ bool PigpiodOutput::connectToPigpiod()
         connectionStatus = "Error: " + pigpiod.getLastError();
         LOGC ("Failed to connect: ", pigpiod.getLastError());
         CoreServices::sendStatusMessage ("Failed to connect to pigpiod: " + pigpiod.getLastError());
+        CoreServices::updateSignalChain (this);
         return false;
     }
 }
@@ -108,6 +110,7 @@ void PigpiodOutput::disconnectFromPigpiod()
         connectionStatus = "Disconnected";
         LOGC ("Disconnected from pigpiod");
         CoreServices::sendStatusMessage ("Disconnected from pigpiod");
+        CoreServices::updateSignalChain (this);
     }
 }
 
