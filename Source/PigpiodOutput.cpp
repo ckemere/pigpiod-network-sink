@@ -214,11 +214,18 @@ void PigpiodOutput::handleTTLEvent (TTLEventPtr event)
         {
             if (event->getState()) // Rising edge
             {
+                auto t1 = juce::Time::getHighResolutionTicks();
+
                 int gpio = (int) getParameter ("gpio_pin")->getValue();
                 int pulseDurationUs = (int) getParameter ("pulse_duration")->getValue();
 
                 // Trigger pulse using pigpiod TRIG command
                 int result = pigpiod.trig (gpio, pulseDurationUs);
+
+                auto t2 = juce::Time::getHighResolutionTicks();
+                double latencyMs = juce::Time::highResolutionTicksToSeconds(t2 - t1) * 1000.0;
+
+                LOGC ("TRIG latency: ", String(latencyMs, 3), " ms");
 
                 if (result < 0)
                 {
