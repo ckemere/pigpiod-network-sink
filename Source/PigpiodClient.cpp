@@ -124,8 +124,9 @@ int PigpiodClient::trig (int gpio, int pulseLength)
         return PI_BAD_GPIO;
     }
 
-    DBG ("PigpiodClient::trig - Sending TRIG command: gpio=" + juce::String(gpio) + " pulseLength=" + juce::String(pulseLength) + "us");
-    int result = sendCommand (PI_CMD_TRIG, gpio, pulseLength);
+    DBG ("PigpiodClient::trig - Sending TRIG command: gpio=" + juce::String(gpio) + " pulseLength=" + juce::String(pulseLength) + "us level=1 (HIGH)");
+    // p1=gpio, p2=pulseLength, p3=1 (pulse HIGH)
+    int result = sendCommand (PI_CMD_TRIG, gpio, pulseLength, 1);
     DBG ("PigpiodClient::trig - Result: " + juce::String(result));
 
     return result;
