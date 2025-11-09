@@ -22,6 +22,9 @@
 */
 
 #include "PigpiodClient.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 
 PigpiodClient::PigpiodClient()
     : port (8888)
@@ -50,6 +53,21 @@ bool PigpiodClient::connect (const juce::String& hostname, int port)
     if (socket->connect (hostname, port, 3000)) // 3 second timeout
     {
         lastError = "";
+
+        // Disable Nagle's algorithm for minimal latency
+        int socketHandle = socket->getRawSocketHandle();
+        if (socketHandle >= 0)
+        {
+            int flag = 1;
+            if (setsockopt (socketHandle, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+            {
+                DBG ("Warning: Failed to set TCP_NODELAY");
+            }
+            else
+            {
+                DBG ("TCP_NODELAY enabled for minimal latency");
+            }
+        }
 
         // Verify connection by getting version
         int version = getVersion();
