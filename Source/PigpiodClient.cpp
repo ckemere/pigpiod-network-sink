@@ -1,0 +1,324 @@
+/*
+    ------------------------------------------------------------------
+
+    This file is part of the Open Ephys GUI
+    Copyright (C) 2024 Open Ephys
+
+    ------------------------------------------------------------------
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
+#include "PigpiodClient.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+
+PigpiodClient::PigpiodClient()
+    : port (8888)
+{
+}
+
+PigpiodClient::~PigpiodClient()
+{
+    disconnect();
+}
+
+bool PigpiodClient::isConnected() const
+{
+    return socket != nullptr && socket->isConnected();
+}
+
+bool PigpiodClient::connect (const juce::String& hostname, int port)
+{
+    disconnect(); // Close any existing connection
+
+    this->hostname = hostname;
+    this->port = port;
+
+    socket = std::make_unique<juce::StreamingSocket>();
+
+    if (socket->connect (hostname, port, 3000)) // 3 second timeout
+    {
+        lastError = "";
+
+        // Disable Nagle's algorithm for minimal latency
+        int socketHandle = socket->getRawSocketHandle();
+        if (socketHandle >= 0)
+        {
+            int flag = 1;
+            if (setsockopt (socketHandle, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
+            {
+                DBG ("Warning: Failed to set TCP_NODELAY");
+            }
+            else
+            {
+                DBG ("TCP_NODELAY enabled for minimal latency");
+            }
+        }
+
+        // Verify connection by getting version
+        int version = getVersion();
+        if (version > 0)
+        {
+            return true;
+        }
+        else
+        {
+            lastError = "Failed to get pigpiod version. Is pigpiod running?";
+            disconnect();
+            return false;
+        }
+    }
+    else
+    {
+        lastError = "Failed to connect to " + hostname + ":" + juce::String (port);
+        socket = nullptr;
+        return false;
+    }
+}
+
+void PigpiodClient::disconnect()
+{
+    if (socket != nullptr)
+    {
+        socket->close();
+        socket = nullptr;
+    }
+    lastError = "";
+}
+
+int PigpiodClient::getVersion()
+{
+    return sendCommand (PI_CMD_PIGPV);
+}
+
+int PigpiodClient::setMode (int gpio, int mode)
+{
+    if (gpio < 0 || gpio > 53)
+    {
+        lastError = "Invalid GPIO number: " + juce::String (gpio);
+        return PI_BAD_GPIO;
+    }
+
+    DBG ("PigpiodClient::setMode - Setting GPIO " + juce::String(gpio) + " to mode " + juce::String(mode));
+    return sendCommand (PI_CMD_MODES, gpio, mode);
+}
+
+int PigpiodClient::write (int gpio, int level)
+{
+    if (gpio < 0 || gpio > 53)
+    {
+        lastError = "Invalid GPIO number: " + juce::String (gpio);
+        return PI_BAD_GPIO;
+    }
+
+    return sendCommand (PI_CMD_WRITE, gpio, level);
+}
+
+int PigpiodClient::trig (int gpio, int pulseLength)
+{
+    if (gpio < 0 || gpio > 53)
+    {
+        lastError = "Invalid GPIO number: " + juce::String (gpio);
+        return PI_BAD_GPIO;
+    }
+
+    if (pulseLength < 1 || pulseLength > 100)
+    {
+        lastError = "Invalid pulse length: " + juce::String (pulseLength) + " (must be 1-100 microseconds)";
+        return PI_BAD_GPIO;
+    }
+
+    // TRIG uses extension data for the level parameter
+    // p1=gpio, p2=pulseLength, p3=4 (size of extension), ext=level
+    uint32_t level = 1; // HIGH pulse
+
+    // Use non-waiting version for minimal latency (fire-and-forget)
+    int result = sendCommandExtNoWait (PI_CMD_TRIG, gpio, pulseLength, sizeof(uint32_t), &level);
+
+    return result;
+}
+
+int PigpiodClient::sendCommand (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t p3)
+{
+    if (!isConnected())
+    {
+        lastError = "Not connected to pigpiod";
+        return PI_NOT_CONNECTED;
+    }
+
+    // Prepare command (16 bytes: 4x uint32_t in little-endian)
+    uint8_t cmdBuf[16];
+    memcpy (cmdBuf + 0, &cmd, 4);
+    memcpy (cmdBuf + 4, &p1, 4);
+    memcpy (cmdBuf + 8, &p2, 4);
+    memcpy (cmdBuf + 12, &p3, 4);
+
+    // Send command
+    int sent = socket->write (cmdBuf, 16);
+    if (sent != 16)
+    {
+        lastError = "Failed to send command";
+        return PI_SOCKET_ERROR;
+    }
+
+    // Receive response (16 bytes: status + data)
+    uint8_t resBuf[16];
+    int totalReceived = 0;
+    int attempts = 0;
+    const int maxAttempts = 100; // Prevent infinite loop
+
+    // Keep reading until we get all 16 bytes
+    while (totalReceived < 16 && attempts < maxAttempts)
+    {
+        int received = socket->read (resBuf + totalReceived, 16 - totalReceived, true); // blocking read
+
+        if (received > 0)
+        {
+            totalReceived += received;
+        }
+        else if (received < 0)
+        {
+            lastError = "Socket read error";
+            return PI_SOCKET_ERROR;
+        }
+
+        attempts++;
+    }
+
+    if (totalReceived != 16)
+    {
+        lastError = "Incomplete response from pigpiod";
+        return PI_SOCKET_ERROR;
+    }
+
+    // Extract status (first 4 bytes)
+    int32_t status;
+    memcpy (&status, resBuf, 4);
+
+    return status;
+}
+
+int PigpiodClient::sendCommandExt (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t extSize, const void* extData)
+{
+    if (!isConnected())
+    {
+        lastError = "Not connected to pigpiod";
+        return PI_NOT_CONNECTED;
+    }
+
+    // Prepare command header (16 bytes: 4x uint32_t)
+    // p3 = size of extension data
+    uint8_t cmdBuf[16];
+    memcpy (cmdBuf + 0, &cmd, 4);
+    memcpy (cmdBuf + 4, &p1, 4);
+    memcpy (cmdBuf + 8, &p2, 4);
+    memcpy (cmdBuf + 12, &extSize, 4);
+
+    // Send command header
+    int sent = socket->write (cmdBuf, 16);
+    if (sent != 16)
+    {
+        lastError = "Failed to send command header";
+        return PI_SOCKET_ERROR;
+    }
+
+    // Send extension data if present
+    if (extSize > 0 && extData != nullptr)
+    {
+        int extSent = socket->write (extData, extSize);
+        if (extSent != (int)extSize)
+        {
+            lastError = "Failed to send extension data";
+            return PI_SOCKET_ERROR;
+        }
+    }
+
+    // Receive response (16 bytes: status + data)
+    uint8_t resBuf[16];
+    int totalReceived = 0;
+    int attempts = 0;
+    const int maxAttempts = 100; // Prevent infinite loop
+
+    // Keep reading until we get all 16 bytes
+    while (totalReceived < 16 && attempts < maxAttempts)
+    {
+        int received = socket->read (resBuf + totalReceived, 16 - totalReceived, true); // blocking read
+
+        if (received > 0)
+        {
+            totalReceived += received;
+        }
+        else if (received < 0)
+        {
+            lastError = "Socket read error";
+            return PI_SOCKET_ERROR;
+        }
+
+        attempts++;
+    }
+
+    if (totalReceived != 16)
+    {
+        lastError = "Incomplete response from pigpiod";
+        return PI_SOCKET_ERROR;
+    }
+
+    // Extract status (first 4 bytes)
+    int32_t status;
+    memcpy (&status, resBuf, 4);
+
+    return status;
+}
+
+int PigpiodClient::sendCommandExtNoWait (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t extSize, const void* extData)
+{
+    if (!isConnected())
+    {
+        lastError = "Not connected to pigpiod";
+        return PI_NOT_CONNECTED;
+    }
+
+    // Prepare command header (16 bytes: 4x uint32_t)
+    // p3 = size of extension data
+    uint8_t cmdBuf[16];
+    memcpy (cmdBuf + 0, &cmd, 4);
+    memcpy (cmdBuf + 4, &p1, 4);
+    memcpy (cmdBuf + 8, &p2, 4);
+    memcpy (cmdBuf + 12, &extSize, 4);
+
+    // Send command header
+    int sent = socket->write (cmdBuf, 16);
+    if (sent != 16)
+    {
+        lastError = "Failed to send command header";
+        return PI_SOCKET_ERROR;
+    }
+
+    // Send extension data if present
+    if (extSize > 0 && extData != nullptr)
+    {
+        int extSent = socket->write (extData, extSize);
+        if (extSent != (int)extSize)
+        {
+            lastError = "Failed to send extension data";
+            return PI_SOCKET_ERROR;
+        }
+    }
+
+    // Don't wait for response - fire and forget for minimal latency
+    return 0;
+}

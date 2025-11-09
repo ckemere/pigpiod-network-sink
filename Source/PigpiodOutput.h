@@ -21,30 +21,28 @@
 
 */
 
-#ifndef __ARDUINOOUTPUT_H_F7BDA585__
-#define __ARDUINOOUTPUT_H_F7BDA585__
+#ifndef __PIGPIODOUTPUT_H_F7BDA585__
+#define __PIGPIODOUTPUT_H_F7BDA585__
 
 #include <ProcessorHeaders.h>
-
-#include <SerialLib.h>
-#include "serial/ofArduino.h"
+#include "PigpiodClient.h"
 
 /**
 
-    Provides a serial interface to an Arduino board.
+    Provides a network interface to a Raspberry Pi running pigpiod.
 
-    Based on Open Frameworks ofArduino class.
+    Sends GPIO trigger pulses via the pigpiod daemon.
 
     @see GenericProcessor
  */
-class ArduinoOutput : public GenericProcessor
+class PigpiodOutput : public GenericProcessor
 {
 public:
     /** Constructor */
-    ArduinoOutput();
+    PigpiodOutput();
 
     /** Destructor */
-    ~ArduinoOutput();
+    ~PigpiodOutput();
 
     /** Registers the parameters for a given processor */
     void registerParameters() override;
@@ -52,7 +50,7 @@ public:
     /** Called whenever a parameter's value is changed */
     void parameterValueChanged (Parameter* param) override;
 
-    /** Searches for events and triggers the Arduino output when appropriate. */
+    /** Searches for events and triggers the pigpiod output when appropriate. */
     void process (AudioBuffer<float>& buffer) override;
 
     /** Convenient interface for responding to incoming events. */
@@ -64,29 +62,42 @@ public:
     /** Called immediately after the end of data acquisition. */
     bool stopAcquisition() override;
 
-    /** Creates the ArduinoOutputEditor. */
+    /** Creates the PigpiodOutputEditor. */
     AudioProcessorEditor* createEditor() override;
 
-    /** Returns a list of available serial devices */
-    Array<String> getDevices();
+    /** Connect to pigpiod daemon */
+    bool connectToPigpiod();
 
-    /** Tries to connect to an Arduino on a given port*/
-    void setDevice (String deviceString, bool initializing = false);
+    /** Disconnect from pigpiod daemon */
+    void disconnectFromPigpiod();
+
+    /** Get connection status */
+    bool isConnectedToPigpiod() const;
+
+    /** Get connection status message */
+    String getConnectionStatus() const;
+
+    /** Get reference to pigpiod client (for test button) */
+    PigpiodClient& getPigpiodClient() { return pigpiod; }
 
 private:
-    /** Opens the serial connection to the Arduino. */
-    ofSerial serial;
+    /** pigpiod client */
+    PigpiodClient pigpiod;
 
-    /** An open-frameworks Arduino object. */
-    ofArduino arduino;
+    /** Connection state */
+    bool connected;
+    String connectionStatus;
 
+    /** Gate state */
     bool gateIsOpen;
-    bool deviceSelected;
 
-    String deviceString;
-    Array<String> devices;
+    /** Hostname/IP for pigpiod */
+    String hostname;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ArduinoOutput);
+    /** Port for pigpiod */
+    int pigpiodPort;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PigpiodOutput);
 };
 
-#endif // __ARDUINOOUTPUT_H_F7BDA585__
+#endif // __PIGPIODOUTPUT_H_F7BDA585__

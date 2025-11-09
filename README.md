@@ -10,7 +10,85 @@ This plugin can be added via the Open Ephys GUI Plugin Installer. To access the 
 
 ## Usage
 
-Instructions for using the plugin
+### Raspberry Pi Setup
+
+1. Install pigpiod on your Raspberry Pi:
+   ```bash
+   sudo apt-get install pigpio
+   ```
+
+2. Start the pigpiod daemon (allow remote connections):
+   ```bash
+   sudo pigpiod
+   ```
+
+3. To enable pigpiod on boot:
+   ```bash
+   sudo systemctl enable pigpiod
+   sudo systemctl start pigpiod
+   ```
+
+### Performance Optimization (Optional)
+
+For minimal latency (~1-2ms), you can optionally use the included custom GPIO server instead of pigpiod, and apply real-time optimizations on the Raspberry Pi.
+
+#### Using the Custom GPIO Server
+
+A minimal GPIO server is included in the `raspberry-pi/` directory that provides lower latency than pigpiod:
+
+```bash
+cd raspberry-pi
+make
+sudo ./gpio_server
+```
+
+See `raspberry-pi/README.md` for complete instructions.
+
+#### Core Isolation (Advanced)
+
+To achieve the most consistent low latency, you can isolate a CPU core for the GPIO server:
+
+1. Edit `/boot/cmdline.txt` and add `isolcpus=3` to the end of the line:
+   ```
+   ... isolcpus=3
+   ```
+
+2. Reboot the Raspberry Pi
+
+3. Run the GPIO server (or pigpiod) on the isolated core:
+   ```bash
+   sudo taskset -c 3 ./gpio_server
+   # or for pigpiod:
+   sudo taskset -c 3 pigpiod
+   ```
+
+#### Additional Optimizations
+
+**Disable CPU frequency scaling:**
+```bash
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+```
+
+**Disable IRQ balance:**
+```bash
+sudo systemctl stop irqbalance
+sudo systemctl disable irqbalance
+```
+
+These optimizations prevent the Linux scheduler from preempting the GPIO server and ensure consistent sub-2ms latency.
+
+### Plugin Configuration
+
+1. Add the "Pigpiod Sink" plugin to your signal chain
+2. Enter the Raspberry Pi's IP address (or "localhost" if running locally)
+3. Set the port (default: 8888)
+4. Click "CONNECT" to establish connection with pigpiod
+5. Configure the GPIO pin (BCM numbering, pins 2-27 available)
+6. Set the pulse duration in microseconds (10 - 100 µs, default: 50 µs)
+7. Select the TTL input line that will trigger the GPIO pulse
+8. Optionally select a gate line to enable/disable triggering
+
+When a rising edge is detected on the input line (and the gate is open), the plugin will send a pulse to the configured GPIO pin on the Raspberry Pi.
 
 ## Building from source
 
