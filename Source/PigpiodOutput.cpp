@@ -83,30 +83,17 @@ bool PigpiodOutput::connectToPigpiod()
         connectionStatus = "Connected (version " + String (version) + ")";
         LOGC ("Connected to pigpiod version ", version);
 
-        // Initialize GPIO pin (required for TRIG command to work)
-        // First set mode to OUTPUT, then set level to LOW
+        // Initialize GPIO pin to LOW (required for TRIG command to work)
+        // WRITE command implicitly sets the pin to OUTPUT mode
         int gpio = (int) getParameter ("gpio_pin")->getValue();
-
-        // Set GPIO to OUTPUT mode
-        int modeResult = pigpiod.setMode (gpio, PI_OUTPUT);
-        if (modeResult < 0)
-        {
-            LOGC ("Warning: Failed to set GPIO ", gpio, " to OUTPUT mode: ", modeResult);
-        }
-        else
-        {
-            LOGC ("Set GPIO ", gpio, " to OUTPUT mode");
-        }
-
-        // Set GPIO to LOW level
         int writeResult = pigpiod.write (gpio, PI_LOW);
         if (writeResult < 0)
         {
-            LOGC ("Warning: Failed to set GPIO ", gpio, " to LOW: ", writeResult);
+            LOGC ("Warning: Failed to initialize GPIO ", gpio, " to LOW: ", writeResult);
         }
         else
         {
-            LOGC ("Set GPIO ", gpio, " to LOW");
+            LOGC ("Initialized GPIO ", gpio, " to LOW");
         }
 
         CoreServices::sendStatusMessage ("Connected to pigpiod at " + hostname + ":" + String (pigpiodPort));
@@ -184,18 +171,11 @@ void PigpiodOutput::parameterValueChanged (Parameter* param)
         {
             int gpio = (int) param->getValue();
 
-            // Set GPIO to OUTPUT mode
-            int modeResult = pigpiod.setMode (gpio, PI_OUTPUT);
-            if (modeResult < 0)
-            {
-                LOGC ("Warning: Failed to set GPIO ", gpio, " to OUTPUT mode: ", modeResult);
-            }
-
-            // Set GPIO to LOW level
+            // Initialize GPIO to LOW (WRITE implicitly sets OUTPUT mode)
             int writeResult = pigpiod.write (gpio, PI_LOW);
             if (writeResult < 0)
             {
-                LOGC ("Warning: Failed to set GPIO ", gpio, " to LOW: ", writeResult);
+                LOGC ("Warning: Failed to initialize GPIO ", gpio, " to LOW: ", writeResult);
             }
             else
             {
