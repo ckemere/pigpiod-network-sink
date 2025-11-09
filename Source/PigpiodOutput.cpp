@@ -82,6 +82,19 @@ bool PigpiodOutput::connectToPigpiod()
         connected = true;
         connectionStatus = "Connected (version " + String (version) + ")";
         LOGC ("Connected to pigpiod version ", version);
+
+        // Initialize GPIO pin to LOW (required for TRIG command to work)
+        int gpio = (int) getParameter ("gpio_pin")->getValue();
+        int result = pigpiod.write (gpio, PI_LOW);
+        if (result < 0)
+        {
+            LOGC ("Warning: Failed to initialize GPIO ", gpio, " to LOW: ", result);
+        }
+        else
+        {
+            LOGC ("Initialized GPIO ", gpio, " to LOW");
+        }
+
         CoreServices::sendStatusMessage ("Connected to pigpiod at " + hostname + ":" + String (pigpiodPort));
         CoreServices::updateSignalChain (this);
         return true;
@@ -149,6 +162,23 @@ void PigpiodOutput::parameterValueChanged (Parameter* param)
             gateIsOpen = true;
         else
             gateIsOpen = false;
+    }
+    else if (param->getName().equalsIgnoreCase ("gpio_pin"))
+    {
+        // Initialize new GPIO pin to LOW if connected (required for TRIG to work)
+        if (connected)
+        {
+            int gpio = (int) param->getValue();
+            int result = pigpiod.write (gpio, PI_LOW);
+            if (result < 0)
+            {
+                LOGC ("Warning: Failed to initialize GPIO ", gpio, " to LOW: ", result);
+            }
+            else
+            {
+                LOGC ("Initialized GPIO ", gpio, " to LOW");
+            }
+        }
     }
 }
 
