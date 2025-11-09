@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include <time.h>
 #include <errno.h>
+#include <sched.h>
+#include <pthread.h>
 
 // GPIO Memory Map
 #define BCM2835_PERI_BASE   0x3F000000  // RPi 2/3
@@ -220,6 +222,22 @@ int main(int argc, char *argv[])
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len;
     int port = 8888;
+
+    // Set real-time scheduling priority for minimal latency
+    struct sched_param param;
+    param.sched_priority = 99;  // Highest priority
+    if (sched_setscheduler(0, SCHED_FIFO, &param) != 0) {
+        fprintf(stderr, "Warning: Failed to set real-time priority (run with sudo): %s\n", strerror(errno));
+    } else {
+        printf("Real-time priority enabled (SCHED_FIFO, priority 99)\n");
+    }
+
+    // Lock memory to prevent paging delays
+    if (mlockall(MCL_CURRENT | MCL_FUTURE) != 0) {
+        fprintf(stderr, "Warning: Failed to lock memory: %s\n", strerror(errno));
+    } else {
+        printf("Memory locked to prevent paging\n");
+    }
 
     // Initialize GPIO
     if (init_gpio() < 0) {

@@ -85,8 +85,43 @@ Expected latency from Open Ephys event to GPIO toggle: **1-2ms**
 
 This is significantly faster than pigpiod (~10-20ms) because:
 1. Direct GPIO memory access (no daemon overhead)
-2. Tight event loop (no scheduling delays)
-3. Fire-and-forget protocol (no response waiting)
+2. Real-time scheduling priority (SCHED_FIFO, priority 99)
+3. Memory locking to prevent paging delays
+4. Tight event loop (no scheduling delays)
+5. Fire-and-forget protocol (no response waiting)
+
+### Reducing Latency Jitter
+
+If you see variable latency (sometimes 1-2ms, sometimes 10-15ms), apply these optimizations:
+
+**1. Disable CPU frequency scaling (keep CPU at max speed):**
+```bash
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+```
+
+**2. Isolate a CPU core for gpio_server (advanced):**
+
+Edit `/boot/cmdline.txt` and add `isolcpus=3` to the end of the line (replace 3 with your desired core):
+```
+... isolcpus=3
+```
+
+Reboot, then run:
+```bash
+sudo taskset -c 3 ./gpio_server
+```
+
+**3. Disable IRQ balance (prevent interrupt migration):**
+```bash
+sudo systemctl stop irqbalance
+sudo systemctl disable irqbalance
+```
+
+**4. Check for competing processes:**
+```bash
+top
+# Look for processes using significant CPU
+```
 
 ## Troubleshooting
 
