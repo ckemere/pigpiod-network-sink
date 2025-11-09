@@ -124,14 +124,12 @@ int PigpiodClient::trig (int gpio, int pulseLength)
         return PI_BAD_GPIO;
     }
 
-    DBG ("PigpiodClient::trig - Sending TRIG command: gpio=" + juce::String(gpio) + " pulseLength=" + juce::String(pulseLength) + "us level=1 (HIGH)");
-
     // TRIG uses extension data for the level parameter
     // p1=gpio, p2=pulseLength, p3=4 (size of extension), ext=level
     uint32_t level = 1; // HIGH pulse
-    int result = sendCommandExt (PI_CMD_TRIG, gpio, pulseLength, sizeof(uint32_t), &level);
 
-    DBG ("PigpiodClient::trig - Result: " + juce::String(result));
+    // Use non-waiting version for minimal latency (fire-and-forget)
+    int result = sendCommandExtNoWait (PI_CMD_TRIG, gpio, pulseLength, sizeof(uint32_t), &level);
 
     return result;
 }
@@ -266,4 +264,43 @@ int PigpiodClient::sendCommandExt (uint32_t cmd, uint32_t p1, uint32_t p2, uint3
     memcpy (&status, resBuf, 4);
 
     return status;
+}
+
+int PigpiodClient::sendCommandExtNoWait (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t extSize, const void* extData)
+{
+    if (!isConnected())
+    {
+        lastError = "Not connected to pigpiod";
+        return PI_NOT_CONNECTED;
+    }
+
+    // Prepare command header (16 bytes: 4x uint32_t)
+    // p3 = size of extension data
+    uint8_t cmdBuf[16];
+    memcpy (cmdBuf + 0, &cmd, 4);
+    memcpy (cmdBuf + 4, &p1, 4);
+    memcpy (cmdBuf + 8, &p2, 4);
+    memcpy (cmdBuf + 12, &extSize, 4);
+
+    // Send command header
+    int sent = socket->write (cmdBuf, 16);
+    if (sent != 16)
+    {
+        lastError = "Failed to send command header";
+        return PI_SOCKET_ERROR;
+    }
+
+    // Send extension data if present
+    if (extSize > 0 && extData != nullptr)
+    {
+        int extSent = socket->write (extData, extSize);
+        if (extSent != (int)extSize)
+        {
+            lastError = "Failed to send extension data";
+            return PI_SOCKET_ERROR;
+        }
+    }
+
+    // Don't wait for response - fire and forget for minimal latency
+    return 0;
 }

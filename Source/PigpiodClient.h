@@ -124,6 +124,17 @@ private:
      */
     int sendCommandExt (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t extSize, const void* extData);
 
+    /** Send extended command without waiting for response (fire-and-forget)
+     *
+     * @param cmd Command code
+     * @param p1 Parameter 1
+     * @param p2 Parameter 2
+     * @param extSize Size of extension data in bytes
+     * @param extData Pointer to extension data
+     * @return 0 on successful send, negative error code on failure
+     */
+    int sendCommandExtNoWait (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t extSize, const void* extData);
+
     std::unique_ptr<juce::StreamingSocket> socket;
     juce::String lastError;
     juce::String hostname;
