@@ -113,6 +113,17 @@ private:
      */
     int sendCommand (uint32_t cmd, uint32_t p1 = 0, uint32_t p2 = 0, uint32_t p3 = 0);
 
+    /** Send extended command to pigpiod with extension data
+     *
+     * @param cmd Command code
+     * @param p1 Parameter 1
+     * @param p2 Parameter 2
+     * @param extSize Size of extension data in bytes
+     * @param extData Pointer to extension data
+     * @return Response value, or negative error code
+     */
+    int sendCommandExt (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t extSize, const void* extData);
+
     std::unique_ptr<juce::StreamingSocket> socket;
     juce::String lastError;
     juce::String hostname;

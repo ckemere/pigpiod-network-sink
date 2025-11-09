@@ -125,8 +125,12 @@ int PigpiodClient::trig (int gpio, int pulseLength)
     }
 
     DBG ("PigpiodClient::trig - Sending TRIG command: gpio=" + juce::String(gpio) + " pulseLength=" + juce::String(pulseLength) + "us level=1 (HIGH)");
-    // p1=gpio, p2=pulseLength, p3=1 (pulse HIGH)
-    int result = sendCommand (PI_CMD_TRIG, gpio, pulseLength, 1);
+
+    // TRIG uses extension data for the level parameter
+    // p1=gpio, p2=pulseLength, p3=4 (size of extension), ext=level
+    uint32_t level = 1; // HIGH pulse
+    int result = sendCommandExt (PI_CMD_TRIG, gpio, pulseLength, sizeof(uint32_t), &level);
+
     DBG ("PigpiodClient::trig - Result: " + juce::String(result));
 
     return result;
@@ -153,6 +157,78 @@ int PigpiodClient::sendCommand (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t
     {
         lastError = "Failed to send command";
         return PI_SOCKET_ERROR;
+    }
+
+    // Receive response (16 bytes: status + data)
+    uint8_t resBuf[16];
+    int totalReceived = 0;
+    int attempts = 0;
+    const int maxAttempts = 100; // Prevent infinite loop
+
+    // Keep reading until we get all 16 bytes
+    while (totalReceived < 16 && attempts < maxAttempts)
+    {
+        int received = socket->read (resBuf + totalReceived, 16 - totalReceived, true); // blocking read
+
+        if (received > 0)
+        {
+            totalReceived += received;
+        }
+        else if (received < 0)
+        {
+            lastError = "Socket read error";
+            return PI_SOCKET_ERROR;
+        }
+
+        attempts++;
+    }
+
+    if (totalReceived != 16)
+    {
+        lastError = "Incomplete response from pigpiod";
+        return PI_SOCKET_ERROR;
+    }
+
+    // Extract status (first 4 bytes)
+    int32_t status;
+    memcpy (&status, resBuf, 4);
+
+    return status;
+}
+
+int PigpiodClient::sendCommandExt (uint32_t cmd, uint32_t p1, uint32_t p2, uint32_t extSize, const void* extData)
+{
+    if (!isConnected())
+    {
+        lastError = "Not connected to pigpiod";
+        return PI_NOT_CONNECTED;
+    }
+
+    // Prepare command header (16 bytes: 4x uint32_t)
+    // p3 = size of extension data
+    uint8_t cmdBuf[16];
+    memcpy (cmdBuf + 0, &cmd, 4);
+    memcpy (cmdBuf + 4, &p1, 4);
+    memcpy (cmdBuf + 8, &p2, 4);
+    memcpy (cmdBuf + 12, &extSize, 4);
+
+    // Send command header
+    int sent = socket->write (cmdBuf, 16);
+    if (sent != 16)
+    {
+        lastError = "Failed to send command header";
+        return PI_SOCKET_ERROR;
+    }
+
+    // Send extension data if present
+    if (extSize > 0 && extData != nullptr)
+    {
+        int extSent = socket->write (extData, extSize);
+        if (extSent != (int)extSize)
+        {
+            lastError = "Failed to send extension data";
+            return PI_SOCKET_ERROR;
+        }
     }
 
     // Receive response (16 bytes: status + data)
