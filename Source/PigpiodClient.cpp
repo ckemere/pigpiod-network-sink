@@ -87,6 +87,18 @@ int PigpiodClient::getVersion()
     return sendCommand (PI_CMD_PIGPV);
 }
 
+int PigpiodClient::setMode (int gpio, int mode)
+{
+    if (gpio < 0 || gpio > 53)
+    {
+        lastError = "Invalid GPIO number: " + juce::String (gpio);
+        return PI_BAD_GPIO;
+    }
+
+    DBG ("PigpiodClient::setMode - Setting GPIO " + juce::String(gpio) + " to mode " + juce::String(mode));
+    return sendCommand (PI_CMD_MODES, gpio, mode);
+}
+
 int PigpiodClient::write (int gpio, int level)
 {
     if (gpio < 0 || gpio > 53)

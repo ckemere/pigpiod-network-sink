@@ -83,16 +83,30 @@ bool PigpiodOutput::connectToPigpiod()
         connectionStatus = "Connected (version " + String (version) + ")";
         LOGC ("Connected to pigpiod version ", version);
 
-        // Initialize GPIO pin to LOW (required for TRIG command to work)
+        // Initialize GPIO pin (required for TRIG command to work)
+        // First set mode to OUTPUT, then set level to LOW
         int gpio = (int) getParameter ("gpio_pin")->getValue();
-        int result = pigpiod.write (gpio, PI_LOW);
-        if (result < 0)
+
+        // Set GPIO to OUTPUT mode
+        int modeResult = pigpiod.setMode (gpio, PI_OUTPUT);
+        if (modeResult < 0)
         {
-            LOGC ("Warning: Failed to initialize GPIO ", gpio, " to LOW: ", result);
+            LOGC ("Warning: Failed to set GPIO ", gpio, " to OUTPUT mode: ", modeResult);
         }
         else
         {
-            LOGC ("Initialized GPIO ", gpio, " to LOW");
+            LOGC ("Set GPIO ", gpio, " to OUTPUT mode");
+        }
+
+        // Set GPIO to LOW level
+        int writeResult = pigpiod.write (gpio, PI_LOW);
+        if (writeResult < 0)
+        {
+            LOGC ("Warning: Failed to set GPIO ", gpio, " to LOW: ", writeResult);
+        }
+        else
+        {
+            LOGC ("Set GPIO ", gpio, " to LOW");
         }
 
         CoreServices::sendStatusMessage ("Connected to pigpiod at " + hostname + ":" + String (pigpiodPort));
@@ -165,18 +179,27 @@ void PigpiodOutput::parameterValueChanged (Parameter* param)
     }
     else if (param->getName().equalsIgnoreCase ("gpio_pin"))
     {
-        // Initialize new GPIO pin to LOW if connected (required for TRIG to work)
+        // Initialize new GPIO pin if connected (required for TRIG to work)
         if (connected)
         {
             int gpio = (int) param->getValue();
-            int result = pigpiod.write (gpio, PI_LOW);
-            if (result < 0)
+
+            // Set GPIO to OUTPUT mode
+            int modeResult = pigpiod.setMode (gpio, PI_OUTPUT);
+            if (modeResult < 0)
             {
-                LOGC ("Warning: Failed to initialize GPIO ", gpio, " to LOW: ", result);
+                LOGC ("Warning: Failed to set GPIO ", gpio, " to OUTPUT mode: ", modeResult);
+            }
+
+            // Set GPIO to LOW level
+            int writeResult = pigpiod.write (gpio, PI_LOW);
+            if (writeResult < 0)
+            {
+                LOGC ("Warning: Failed to set GPIO ", gpio, " to LOW: ", writeResult);
             }
             else
             {
-                LOGC ("Initialized GPIO ", gpio, " to LOW");
+                LOGC ("Changed GPIO pin to ", gpio, " and initialized to LOW");
             }
         }
     }

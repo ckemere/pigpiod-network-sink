@@ -26,9 +26,14 @@
 #include <CommonLibHeader.h>
 
 // pigpiod socket interface command codes
+#define PI_CMD_MODES 5   // Set GPIO mode
 #define PI_CMD_PIGPV 26  // Get pigpio version
 #define PI_CMD_WRITE 4   // Write GPIO level
 #define PI_CMD_TRIG 37   // Trigger pulse
+
+// GPIO modes
+#define PI_INPUT 0
+#define PI_OUTPUT 1
 
 // GPIO levels
 #define PI_LOW 0
@@ -69,6 +74,14 @@ public:
      * @return version number, or negative error code
      */
     int getVersion();
+
+    /** Set GPIO pin mode
+     *
+     * @param gpio GPIO number (BCM numbering)
+     * @param mode 0 for INPUT, 1 for OUTPUT
+     * @return 0 on success, negative error code on failure
+     */
+    int setMode (int gpio, int mode);
 
     /** Write GPIO pin level
      *
